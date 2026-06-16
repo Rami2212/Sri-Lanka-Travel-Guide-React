@@ -10,7 +10,7 @@
     "openingHours": "7:00 AM - 5:30 PM",
     "latitude": 7.957,
     "longitude": 80.7603,
-    "image": "/images/attractions/sigiriya.svg"
+    "image": "/images/attractions/sigiriya.jpg"
   },
   {
     "id": "galle-fort",
@@ -23,7 +23,7 @@
     "openingHours": "Open 24 hours",
     "latitude": 6.0269,
     "longitude": 80.2168,
-    "image": "/images/attractions/galle-fort.svg"
+    "image": "/images/attractions/galle-fort.jpg"
   },
   {
     "id": "temple-of-the-tooth",
@@ -36,7 +36,7 @@
     "openingHours": "5:30 AM - 8:00 PM",
     "latitude": 7.2936,
     "longitude": 80.6413,
-    "image": "/images/attractions/temple-tooth.svg"
+    "image": "/images/attractions/temple-tooth.jpg"
   },
   {
     "id": "ella-nine-arch-bridge",
@@ -49,7 +49,7 @@
     "openingHours": "Open 24 hours",
     "latitude": 6.8768,
     "longitude": 81.0608,
-    "image": "/images/attractions/nine-arch.svg"
+    "image": "/images/attractions/nine-arch.jpg"
   },
   {
     "id": "mirissa-beach",
@@ -62,7 +62,7 @@
     "openingHours": "Open 24 hours",
     "latitude": 5.9447,
     "longitude": 80.4592,
-    "image": "/images/attractions/mirissa.svg"
+    "image": "/images/attractions/mirissa.jpg"
   },
   {
     "id": "yala-national-park",
@@ -75,7 +75,7 @@
     "openingHours": "6:00 AM - 6:00 PM",
     "latitude": 6.3725,
     "longitude": 81.5185,
-    "image": "/images/attractions/yala.svg"
+    "image": "/images/attractions/yala.jpg"
   },
   {
     "id": "cinnamon-grand-colombo",
@@ -88,7 +88,7 @@
     "openingHours": "Open 24 hours",
     "latitude": 6.9182,
     "longitude": 79.8484,
-    "image": "/images/attractions/cinnamon-grand.svg"
+    "image": "/images/attractions/cinnamon-grand.jpg"
   },
   {
     "id": "ministry-of-crab",
@@ -101,7 +101,7 @@
     "openingHours": "12:00 PM - 10:30 PM",
     "latitude": 6.9344,
     "longitude": 79.8438,
-    "image": "/images/attractions/ministry-crab.svg"
+    "image": "/images/attractions/ministry-crab.jpg"
   },
   {
     "id": "adams-peak",
@@ -114,7 +114,7 @@
     "openingHours": "Best climbed overnight during pilgrimage season",
     "latitude": 6.8096,
     "longitude": 80.4994,
-    "image": "/images/attractions/adams-peak.svg"
+    "image": "/images/attractions/adams-peak.jpg"
   },
   {
     "id": "dambulla-cave-temple",
@@ -127,7 +127,7 @@
     "openingHours": "7:00 AM - 7:00 PM",
     "latitude": 7.8567,
     "longitude": 80.6492,
-    "image": "/images/attractions/dambulla.svg"
+    "image": "/images/attractions/dambulla.jpg"
   },
   {
     "id": "sinharaja-rainforest",
@@ -140,7 +140,7 @@
     "openingHours": "6:30 AM - 5:00 PM",
     "latitude": 6.417,
     "longitude": 80.4583,
-    "image": "/images/attractions/sinharaja.svg"
+    "image": "/images/attractions/sinharaja.jpg"
   },
   {
     "id": "arugam-bay",
@@ -153,7 +153,7 @@
     "openingHours": "Open 24 hours",
     "latitude": 6.8404,
     "longitude": 81.8368,
-    "image": "/images/attractions/arugam-bay.svg"
+    "image": "/images/attractions/arugam-bay.jpg"
   },
   {
     "id": "nuwara-eliya-tea-country",
@@ -166,7 +166,7 @@
     "openingHours": "Open 24 hours",
     "latitude": 6.9497,
     "longitude": 80.7891,
-    "image": "/images/attractions/nuwara-eliya.svg"
+    "image": "/images/attractions/nuwara-eliya.jpg"
   },
   {
     "id": "hikkaduwa-coral-sanctuary",
@@ -179,7 +179,7 @@
     "openingHours": "7:00 AM - 6:00 PM",
     "latitude": 6.1388,
     "longitude": 80.0996,
-    "image": "/images/attractions/hikkaduwa.svg"
+    "image": "/images/attractions/hikkaduwa.jpg"
   },
   {
     "id": "jetwing-lighthouse",
@@ -192,7 +192,7 @@
     "openingHours": "Open 24 hours",
     "latitude": 6.0496,
     "longitude": 80.1907,
-    "image": "/images/attractions/jetwing-lighthouse.svg"
+    "image": "/images/attractions/jetwing-lighthouse.jpg"
   },
   {
     "id": "colombo-national-museum",
@@ -205,6 +205,6 @@
     "openingHours": "9:00 AM - 5:00 PM",
     "latitude": 6.9102,
     "longitude": 79.8612,
-    "image": "/images/attractions/colombo-museum.svg"
+    "image": "/images/attractions/colombo-museum.jpg"
   }
 ]
