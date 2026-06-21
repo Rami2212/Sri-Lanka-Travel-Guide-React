@@ -9,7 +9,7 @@ const statusCopy = {
 
 const LocationPermissionCard = ({ status, error, onRequestLocation, userLocation, compactMobile = false }) => {
   const hasLocation = status === 'granted' && userLocation;
-  const mobileMapHeight = compactMobile ? 'h-48' : 'h-64';
+  const mobileMapHeight = compactMobile ? 'h-56' : 'h-64';
   const mapsUrl = hasLocation
     ? `https://www.google.com/maps?q=${userLocation.latitude},${userLocation.longitude}`
     : '';
@@ -40,7 +40,6 @@ const LocationPermissionCard = ({ status, error, onRequestLocation, userLocation
         {!hasLocation ? (
           <div className="absolute inset-0 grid place-items-center bg-slate-950/45 p-5 text-center backdrop-blur-[2px]">
             <div className="max-w-xs rounded-[1.75rem] bg-white/95 p-5 text-slate-950 shadow-soft">
-              <p className="font-display text-xl font-black">Show your map position</p>
               <p className="mt-2 text-sm font-bold leading-6 text-slate-500">
                 {error || statusCopy[status]}
               </p>

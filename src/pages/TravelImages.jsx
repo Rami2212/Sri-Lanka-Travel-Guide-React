@@ -175,7 +175,7 @@ const TravelImages = ({ attractions, onImagesChanged }) => {
             className="min-h-14 w-full rounded-2xl bg-cinnamon-500 px-5 text-sm font-black text-white shadow-lg shadow-cinnamon-500/25 disabled:cursor-wait disabled:opacity-70"
             disabled={saving}
           >
-            {saving ? 'Saving image...' : 'Save image to IndexedDB'}
+            {saving ? 'Saving image...' : 'Save image'}
           </button>
         </form>
 
