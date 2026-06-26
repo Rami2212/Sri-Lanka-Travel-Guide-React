@@ -18,6 +18,7 @@ const Home = ({
   locationError,
   onRequestLocation,
   userLocation,
+  roadDistances,
 }) => {
   const navigate = useNavigate();
   const featuredAttractions = attractions.slice(0, 6);
@@ -150,6 +151,7 @@ const Home = ({
                 onToggleFavorite={onToggleFavorite}
                 onToggleVisited={onToggleVisited}
                 userLocation={userLocation}
+                roadDistances={roadDistances}
               />
             ))}
           </div>

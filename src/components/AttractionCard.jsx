@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
-import { calculateDistanceKm, formatDistance } from '../utils/distance';
+import { formatDistance } from '../utils/distance';
+import { buildRoadDistanceKey } from '../utils/roadDistance';
 
 const AttractionCard = ({
   attraction,
@@ -8,15 +9,16 @@ const AttractionCard = ({
   onToggleFavorite,
   onToggleVisited,
   userLocation,
+  roadDistances = {},
 }) => {
-  const distance = userLocation
-    ? formatDistance(
-        calculateDistanceKm(userLocation, {
-          latitude: attraction.latitude,
-          longitude: attraction.longitude,
-        }),
-      )
-    : null;
+  const destination = {
+    latitude: attraction.latitude,
+    longitude: attraction.longitude,
+  };
+  const distanceKey = userLocation ? buildRoadDistanceKey(userLocation, destination) : '';
+  const roadDistanceKm = distanceKey ? roadDistances[distanceKey] : undefined;
+  const distanceLabel =
+    roadDistanceKm === undefined ? 'Checking road distance...' : formatDistance(roadDistanceKm);
 
   return (
     <article className="flex h-full flex-col overflow-hidden rounded-[2rem] border border-white/70 bg-white/90 shadow-card backdrop-blur transition duration-300 lg:rounded-[2.25rem] lg:hover:-translate-y-1 lg:hover:shadow-soft">
@@ -40,8 +42,8 @@ const AttractionCard = ({
           </div>
 
           <div className="flex flex-wrap items-center gap-2 text-sm font-bold text-slate-600">
-            {distance ? (
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-600">{distance}</span>
+            {userLocation ? (
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-600">{distanceLabel}</span>
             ) : null}
           </div>
         </div>

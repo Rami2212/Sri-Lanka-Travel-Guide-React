@@ -26,19 +26,6 @@
     "image": "/images/attractions/galle-fort.jpg"
   },
   {
-    "id": "temple-of-the-tooth",
-    "name": "Temple of the Sacred Tooth Relic",
-    "category": "Religious",
-    "district": "Kandy",
-    "description": "Sri Lanka's most revered Buddhist temple, located beside Kandy Lake and known for daily rituals, heritage architecture, and cultural pageantry.",
-    "address": "Sri Dalada Veediya, Kandy, Sri Lanka",
-    "rating": 4.8,
-    "openingHours": "5:30 AM - 8:00 PM",
-    "latitude": 7.2936,
-    "longitude": 80.6413,
-    "image": "/images/attractions/temple-tooth.jpg"
-  },
-  {
     "id": "ella-nine-arch-bridge",
     "name": "Nine Arch Bridge",
     "category": "Nature",

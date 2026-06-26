@@ -9,6 +9,7 @@ const Favorites = ({
   onToggleFavorite,
   onToggleVisited,
   userLocation,
+  roadDistances,
 }) => {
   const savedAttractions = attractions.filter((attraction) => favoriteIds.includes(attraction.id));
 
@@ -48,6 +49,7 @@ const Favorites = ({
               onToggleFavorite={onToggleFavorite}
               onToggleVisited={onToggleVisited}
               userLocation={userLocation}
+              roadDistances={roadDistances}
             />
           ))}
         </div>
