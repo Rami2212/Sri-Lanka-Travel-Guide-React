@@ -288,10 +288,6 @@ const TravelImages = ({ attractions, onImagesChanged }) => {
                   />
                 </label>
               </div>
-              <p className="text-xs font-semibold leading-5 text-slate-500">
-                Phones usually open the camera directly. Laptops often ignore the `capture` hint, so the app now also
-                provides a real camera button.
-              </p>
             </div>
           </label>
 
