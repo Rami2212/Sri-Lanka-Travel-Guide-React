@@ -1,20 +1,19 @@
 # Sri Lanka Travel Guide
 
-A responsive, mobile-first travel companion for discovering attractions across Sri Lanka. Browse destinations by category, search for places, save favorites, track visited locations, view maps and directions, and keep a private travel photo log directly in the browser.
+A responsive, mobile-first React travel guide for discovering attractions across Sri Lanka. The app lets users browse places, filter by category, save favorites, track visited locations, preview maps and directions, calculate road distance from the user's location, and store travel photos locally in the browser.
 
 ## Highlights
 
-- Explore attractions across Sri Lanka.
-- Search by place name, district, category, address, or description.
-- Filter destinations by category.
-- View detailed location information and opening hours.
-- Show the user's current location with the Geolocation API.
-- Calculate distance to attractions using the Haversine formula.
-- Preview destinations and directions with Google Maps.
-- Save favorite and visited places across browser sessions.
-- Capture or select travel photos and store them locally.
-- Create a local traveler profile with a profile image.
-- Use mobile bottom navigation, tablet layouts, and a desktop header.
+- Browse attractions from a local JSON dataset.
+- Search by attraction, district, category, address, or description.
+- Filter by category and remember the last selected category.
+- Save favorites and visited places in localStorage.
+- Request geolocation and reuse the last saved location across tabs and browser restarts.
+- Show road distance using a routing service instead of straight-line distance.
+- Open Google Maps directions from the current location to an attraction.
+- Capture travel photos from mobile cameras and laptop webcams.
+- Store travel photos locally in IndexedDB.
+- Maintain a local traveler profile with image, name, and bio.
 
 ## Tech Stack
 
@@ -24,88 +23,177 @@ A responsive, mobile-first travel companion for discovering attractions across S
 - Tailwind CSS 3
 - Fetch API
 - Geolocation API
-- Google Maps embeds and navigation links
+- Permissions API
+- MediaDevices
 - LocalStorage
 - IndexedDB
-- ESLint
-- Netlify
+- Google Maps URLs and embeds
+- OSRM public routing API for road distance
 
-## Pages
+## Routes
 
-| Route | Description |
+| Route | Purpose |
 | --- | --- |
-| `/` | Home dashboard, featured places, categories, and current-location map |
-| `/attractions` | Search, filter, and browse attractions |
-| `/attractions/:id` | Attraction image, details, distance, map, and directions |
+| `/` | Home dashboard with featured places, quick categories, and current location card |
+| `/attractions` | Search and category-based attraction browsing |
+| `/attractions/:id` | Detailed attraction page with road distance, map, and directions |
 | `/favorites` | Saved attractions |
-| `/visited` | Visited places |
-| `/travel-images` | Local travel photo capture and gallery |
-| `/profile` | Local traveler profile and profile image |
+| `/visited` | Visited attractions |
+| `/travel-images` | Camera capture, image upload, local image gallery |
+| `/profile` | Local traveler profile |
 
 ## Core Features
 
-### Attraction Discovery
+### 1. Attraction Discovery
 
-Attraction data is loaded asynchronously from `public/data/locations.json`. Each attraction contains its name, category, district, description, address, opening hours, coordinates, and image.
+Attraction data is loaded asynchronously from `public/data/locations.json` through the custom hook `src/hooks/useAttractions.js`. Each attraction includes a name, category, district, description, address, opening hours, coordinates, and image.
 
-The Explore page supports:
+### 2. Location and Road Distance
 
-- Text search
-- Category filtering
-- Responsive attraction cards
-- Empty states
-- Persistent category selection
+The app requests geolocation only after user interaction. When the user grants permission:
 
-### Maps and Directions
+- The current coordinates are saved in `localStorage`
+- The saved location is reused across tabs and browser restarts
+- The app checks browser permission changes with the Permissions API
+- Attraction cards and detail pages show road distance.
 
-The app uses the browser Geolocation API to request the user's current coordinates.
+Road distance is fetched through `src/utils/roadDistance.js` using OSRM's driving route endpoint and cached in `src/hooks/useRoadDistances.js`.
 
-When permission is granted, the app can:
+### 3. Maps and Directions
 
-- Display the current position on Google Maps.
-- Calculate distance to each attraction.
-- Show directions from the current location to an attraction.
-- Open the route in the full Google Maps website or app.
+The app builds Google Maps URLs dynamically:
 
-If permission is denied, attraction browsing and destination maps continue to work.
+- If location exists, it opens driving directions from the saved user location
+- If location is not available, it falls back to a normal attraction map preview
 
-### Favorites and Visited Places
+### 4. Travel Images
 
-Favorite and visited attraction IDs are stored in LocalStorage. They remain available after refreshing or reopening the browser.
+The travel image page supports two capture paths:
 
-### Travel Images
+- Mobile browsers can use the file input camera flow
+- Laptops and desktops can use an in-page webcam flow powered by `navigator.mediaDevices.getUserMedia()`
 
-The Travel Images page supports mobile camera capture and regular file selection:
+Captured or selected images are converted to data URLs and stored locally in IndexedDB. No image is uploaded to a server.
 
-```html
-<input type="file" accept="image/*" capture="environment" />
+### 5. Persistent Local Data
+
+Small user data is stored in `localStorage`:
+
+- Traveler profile
+- Favorite IDs
+- Visited IDs
+- Last selected category
+- Last saved location
+
+Travel photos are stored in IndexedDB because they are larger structured records.
+
+## App Architecture
+
+```mermaid
+graph TD
+    A[main.jsx] --> B[App.jsx]
+
+    B --> C[useAttractions]
+    C --> C1[public/data/locations.json]
+
+    B --> D[usePersistentTravelState]
+    D --> D1[localStorage]
+
+    B --> E[usePersistedLocation]
+    E --> E1[Geolocation API]
+    E --> E2[Permissions API]
+    E --> E3[localStorage]
+
+    B --> F[useRoadDistances]
+    F --> F1[OSRM routing API]
+
+    B --> G[useImageCount]
+    G --> G1[IndexedDB (travelImages)]
+
+    B --> H[Pages]
+    H --> H1[Home]
+    H1 --> H11[AttractionCard]
+    H1 --> H12[LocationPermissionCard]
+
+    H --> H2[Attractions]
+    H2 --> H21[AttractionCard]
+
+    H --> H3[AttractionDetails]
+    H3 --> H31[Google Maps URLs & embeds]
+
+    H --> H4[Favorites]
+    H4 --> H41[AttractionCard]
+
+    H --> H5[Visited]
+    H5 --> H51[AttractionCard]
+
+    H --> H6[TravelImages]
+    H6 --> H61[MediaDevices getUserMedia]
+    H6 --> H62[IndexedDB (travelImages)]
+
+    H --> H7[Profile]
+    H7 --> H71[localStorage]
 ```
 
-Images are linked to attractions and stored in IndexedDB. They are never uploaded to a server.
 
-### Local Profile
+## IndexedDB ER Diagram
 
-The traveler profile includes:
+```mermaid
+erDiagram
+    ATTRACTION {
+        int id PK
+        string name
+        string category
+        string district
+        string address
+        float latitude
+        float longitude
+    }
 
-- Name
-- Bio
-- Profile image
-- Live profile preview
+    TRAVEL_IMAGES {
+        int id PK
+        int attractionId FK
+        string attractionName
+        string dataUrl
+        datetime createdAt
+    }
 
-Profile data is stored locally in the browser. No account or authentication is required.
+    ATTRACTION ||--o{ TRAVEL_IMAGES : "has many"
+```
+
 
 ## Browser Storage
 
-| Data | Storage |
-| --- | --- |
-| Profile name and bio | LocalStorage |
-| Profile image | LocalStorage |
-| Favorite attraction IDs | LocalStorage |
-| Visited attraction IDs | LocalStorage |
-| Last selected category | LocalStorage |
-| Travel photos | IndexedDB |
+| Data | Storage | Notes |
+| --- | --- | --- |
+| Profile name, bio, image | LocalStorage | Lightweight user profile |
+| Favorite attraction IDs | LocalStorage | Array of attraction IDs |
+| Visited attraction IDs | LocalStorage | Array of attraction IDs |
+| Last selected category | LocalStorage | Restores last filter |
+| Last saved location | LocalStorage | Reused across tabs and sessions |
+| Travel photos | IndexedDB | Persistent local image records |
 
-Clearing browser site data removes locally stored profile information, preferences, and travel images.
+Clearing site data removes these saved values.
+
+## Project Structure
+
+```text
+public/
+  data/locations.json
+  images/
+  _redirects
+src/
+  components/
+  data/
+  hooks/
+  pages/
+  utils/
+  App.jsx
+  index.css
+  main.jsx
+questions.md
+fileguide.md
+```
 
 ## Getting Started
 
@@ -123,16 +211,10 @@ cd Sri-Lanka-Travel-Guide-React
 npm install
 ```
 
-### Start Development Server
+### Run in Development
 
 ```bash
 npm run dev
-```
-
-Open the URL printed by Vite, normally:
-
-```text
-http://localhost:5173
 ```
 
 ### Build for Production
@@ -141,67 +223,10 @@ http://localhost:5173
 npm run build
 ```
 
-The production files are generated in `dist`.
-
-### Preview Production Build
-
-```bash
-npm run preview
-```
-
-### Run Lint Checks
+### Run Lint
 
 ```bash
 npm run lint
-```
-
-## Available Scripts
-
-| Command | Description |
-| --- | --- |
-| `npm run dev` | Start the Vite development server |
-| `npm run build` | Create an optimized production build |
-| `npm run lint` | Run ESLint checks |
-
-## Project Structure
-
-```text
-public/
-  data/
-    locations.json
-  images/
-    hero.jpg
-    explore.jpg
-    attractions/
-src/
-  components/
-    AttractionCard.jsx
-    BottomNavigation.jsx
-    BrandLogo.jsx
-    CategoryFilter.jsx
-    DesktopFooter.jsx
-    EmptyState.jsx
-    HeaderNavigation.jsx
-    LocationPermissionCard.jsx
-  data/
-    categories.js
-  hooks/
-    useAttractions.js
-  pages/
-    AttractionDetails.jsx
-    Attractions.jsx
-    Favorites.jsx
-    Home.jsx
-    Profile.jsx
-    TravelImages.jsx
-    Visited.jsx
-  utils/
-    distance.js
-    indexedDb.js
-    storage.js
-  App.jsx
-  index.css
-  main.jsx
 ```
 
 ## Browser Compatibility Notes
@@ -213,35 +238,13 @@ Recommended browsers:
 - Firefox
 - Safari
 
-Important notes:
+Important behavior notes:
 
-- If a user denies location permission, geolocation service doesn't work.
-
-## Responsive Design
-
-The interface is designed mobile-first:
-
-- Mobile and tablet devices use icon-based bottom navigation.
-- Desktop devices use a sticky header and footer.
-- Attraction grids expand from one column to two and three columns.
-- Touch targets are sized for mobile interaction.
-- Maps, forms, images, and cards adapt to available screen space.
-
-## Deployment
-
-The repository includes Netlify configuration in `netlify.toml`.
-
-Netlify build settings:
-
-```text
-Build command: npm run build
-Publish directory: dist
-```
-
-## Privacy
-
-- The app has no backend account system.
-- Profile details remain in the browser.
-- Travel images remain in IndexedDB on the current device.
-- Location is requested only after user interaction.
-- Location and photos are not uploaded by this application.
+- `localStorage` and IndexedDB are required for persistence. If a browser is in strict private mode or storage is blocked, saved data may be limited.
+- Geolocation permission is controlled by the browser. The app can remember the last saved location locally, but it cannot silently grant permission itself.
+- The Permissions API is supported in most modern Chromium-based browsers. In browsers with partial support, the app still works, but permission-state updates may be less automatic.
+- Mobile browsers often honor `capture="environment"` on file inputs and open the camera directly.
+- Laptop and desktop browsers usually ignore the `capture` hint and open a file picker instead. That is why the app also includes a webcam-based `Open camera` flow using `getUserMedia()`.
+- Webcam capture requires `navigator.mediaDevices.getUserMedia()` support and camera permission from the browser.
+- Google Maps embeds and route-opening behavior depend on the browser allowing external map URLs and iframes.
+- Road distance depends on network access to the OSRM public routing service. If that request fails, distance may show as unavailable.
