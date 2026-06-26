@@ -108,7 +108,7 @@ graph TD
     F --> F1[OSRM routing API]
 
     B --> G[useImageCount]
-    G --> G1[IndexedDB (travelImages)]
+    G --> G1[IndexedDB: travelImages]
 
     B --> H[Pages]
     H --> H1[Home]
@@ -129,7 +129,7 @@ graph TD
 
     H --> H6[TravelImages]
     H6 --> H61[MediaDevices getUserMedia]
-    H6 --> H62[IndexedDB (travelImages)]
+    H6 --> H62[IndexedDB: travelImages]
 
     H --> H7[Profile]
     H7 --> H71[localStorage]
