@@ -11,6 +11,22 @@ const readFileAsDataUrl = (file) =>
     reader.readAsDataURL(file);
   });
 
+const canvasToBlob = (canvas) =>
+  new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) {
+          reject(new Error('Could not capture a photo from the camera.'));
+          return;
+        }
+
+        resolve(blob);
+      },
+      'image/jpeg',
+      0.92,
+    );
+  });
+
 const TravelImages = ({ attractions, onImagesChanged }) => {
   const [searchParams] = useSearchParams();
   const requestedAttractionId = searchParams.get('attraction');
@@ -20,7 +36,25 @@ const TravelImages = ({ attractions, onImagesChanged }) => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [formError, setFormError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [cameraLoading, setCameraLoading] = useState(false);
   const fileInputRef = useRef(null);
+  const videoRef = useRef(null);
+  const streamRef = useRef(null);
+
+  const stopCameraStream = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+  };
+
+  useEffect(
+    () => () => {
+      stopCameraStream();
+    },
+    [],
+  );
 
   useEffect(() => {
     const loadImages = async () => {
@@ -45,12 +79,16 @@ const TravelImages = ({ attractions, onImagesChanged }) => {
       : attractions[0]?.id || '';
   const selectedAttraction = attractions.find((attraction) => attraction.id === activeAttractionId);
 
+  const resetPreview = () => {
+    setPreview('');
+    setSelectedFile(null);
+  };
+
   const handleFileChange = async (event) => {
     const file = event.target.files?.[0];
 
     if (!file) {
-      setSelectedFile(null);
-      setPreview('');
+      resetPreview();
       return;
     }
 
@@ -61,6 +99,7 @@ const TravelImages = ({ attractions, onImagesChanged }) => {
 
     try {
       const dataUrl = await readFileAsDataUrl(file);
+      resetPreview();
       setSelectedFile(file);
       setPreview(dataUrl);
       setFormError('');
@@ -92,8 +131,7 @@ const TravelImages = ({ attractions, onImagesChanged }) => {
       const nextImages = [savedImage, ...images];
       setImages(nextImages);
       onImagesChanged(nextImages.length);
-      setSelectedFile(null);
-      setPreview('');
+      resetPreview();
       setFormError('');
 
       if (fileInputRef.current) {
@@ -113,6 +151,85 @@ const TravelImages = ({ attractions, onImagesChanged }) => {
     onImagesChanged(nextImages.length);
   };
 
+  const handleOpenCamera = async () => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setFormError('This browser does not support direct camera access. Please use Choose from device.');
+      return;
+    }
+
+    try {
+      setCameraLoading(true);
+      setFormError('');
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: 'environment',
+        },
+        audio: false,
+      });
+
+      stopCameraStream();
+      streamRef.current = stream;
+      setCameraOpen(true);
+    } catch (error) {
+      setFormError(error.message || 'Could not open the camera. Please allow camera access and try again.');
+    } finally {
+      setCameraLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!cameraOpen || !videoRef.current || !streamRef.current) {
+      return;
+    }
+
+    videoRef.current.srcObject = streamRef.current;
+  }, [cameraOpen]);
+
+  const handleCloseCamera = () => {
+    stopCameraStream();
+    setCameraOpen(false);
+  };
+
+  const handleCapturePhoto = async () => {
+    if (!videoRef.current) {
+      setFormError('Camera preview is not ready yet.');
+      return;
+    }
+
+    const video = videoRef.current;
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    if (!canvas.width || !canvas.height) {
+      setFormError('Camera preview is still loading. Please try again.');
+      return;
+    }
+
+    const context = canvas.getContext('2d');
+
+    if (!context) {
+      setFormError('Could not capture a photo on this browser.');
+      return;
+    }
+
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    try {
+      const blob = await canvasToBlob(canvas);
+      const capturedFile = new window.File([blob], `travel-photo-${Date.now()}.jpg`, { type: 'image/jpeg' });
+      const capturedDataUrl = await readFileAsDataUrl(capturedFile);
+
+      resetPreview();
+      setSelectedFile(capturedFile);
+      setPreview(capturedDataUrl);
+      setFormError('');
+      handleCloseCamera();
+    } catch (error) {
+      setFormError(error.message || 'Could not capture a photo from the camera.');
+    }
+  };
+
   return (
     <div className="space-y-5 lg:space-y-6">
       <header className="space-y-2 lg:grid lg:grid-cols-[0.9fr_1.1fr] lg:items-end lg:gap-8">
@@ -121,7 +238,7 @@ const TravelImages = ({ attractions, onImagesChanged }) => {
         <h1 className="font-display text-4xl font-black text-slate-950 lg:text-6xl">Travel images</h1>
         </div>
         <p className="text-sm leading-6 text-slate-600 lg:text-base lg:font-semibold lg:leading-8">
-          Capture images using a mobile camera or add photos from your gallery.
+          Capture images using your phone or laptop camera, or add photos from your device.
         </p>
       </header>
 
@@ -149,16 +266,62 @@ const TravelImages = ({ attractions, onImagesChanged }) => {
 
           <label className="block">
             <span className="mb-2 block text-sm font-black text-slate-700">Capture or choose image</span>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              capture="environment"
-              onChange={handleFileChange}
-              className="block min-h-14 w-full cursor-pointer rounded-3xl border border-dashed border-lagoon-300 bg-lagoon-50 p-4 text-sm font-bold text-lagoon-900 file:mr-4 file:rounded-2xl file:border-0 file:bg-lagoon-900 file:px-4 file:py-3 file:text-sm file:font-black file:text-white"
-              required
-            />
+            <div className="space-y-3 rounded-3xl border border-dashed border-lagoon-300 bg-lagoon-50 p-4">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={handleOpenCamera}
+                  disabled={cameraLoading}
+                  className="min-h-12 rounded-2xl bg-lagoon-900 px-4 text-sm font-black text-white disabled:cursor-wait disabled:opacity-70"
+                >
+                  {cameraLoading ? 'Opening camera...' : 'Open camera'}
+                </button>
+                <label className="flex min-h-12 cursor-pointer items-center justify-center rounded-2xl bg-white px-4 text-sm font-black text-lagoon-900 ring-1 ring-lagoon-200">
+                  Choose from device
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleFileChange}
+                    className="sr-only"
+                  />
+                </label>
+              </div>
+              <p className="text-xs font-semibold leading-5 text-slate-500">
+                Phones usually open the camera directly. Laptops often ignore the `capture` hint, so the app now also
+                provides a real camera button.
+              </p>
+            </div>
           </label>
+
+          {cameraOpen ? (
+            <div className="space-y-3 rounded-[2rem] bg-slate-950 p-4 text-white">
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className="h-64 w-full rounded-[1.5rem] bg-black object-cover"
+              />
+              <div className="grid gap-3 sm:grid-cols-2">
+                <button
+                  type="button"
+                  className="min-h-12 rounded-2xl bg-cinnamon-500 px-4 text-sm font-black text-white"
+                  onClick={handleCapturePhoto}
+                >
+                  Capture photo
+                </button>
+                <button
+                  type="button"
+                  className="min-h-12 rounded-2xl bg-white/10 px-4 text-sm font-black text-white"
+                  onClick={handleCloseCamera}
+                >
+                  Close camera
+                </button>
+              </div>
+            </div>
+          ) : null}
 
           {preview ? (
             <img
