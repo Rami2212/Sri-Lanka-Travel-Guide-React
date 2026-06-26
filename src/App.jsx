@@ -13,13 +13,17 @@ import Profile from './pages/Profile';
 import TravelImages from './pages/TravelImages';
 import Visited from './pages/Visited';
 import { getAllTravelImages } from './utils/indexedDb';
+import { buildRoadDistanceKey, getRoadDistanceKm } from './utils/roadDistance';
 import {
+  clearStoredLocation,
   getFavoriteIds,
   getLastCategory,
   getProfile,
+  getStoredLocation,
   getVisitedIds,
   saveFavoriteIds,
   saveLastCategory,
+  saveStoredLocation,
   saveProfile,
   saveVisitedIds,
   toggleId,
@@ -27,14 +31,122 @@ import {
 
 const App = () => {
   const { attractions, loading, error } = useAttractions();
+  const storedLocation = getStoredLocation();
   const [profile, setProfile] = useState(() => getProfile());
   const [favoriteIds, setFavoriteIds] = useState(() => getFavoriteIds());
   const [visitedIds, setVisitedIds] = useState(() => getVisitedIds());
   const [selectedCategory, setSelectedCategory] = useState(() => getLastCategory());
   const [imageCount, setImageCount] = useState(0);
-  const [userLocation, setUserLocation] = useState(null);
-  const [locationStatus, setLocationStatus] = useState('idle');
+  const [userLocation, setUserLocation] = useState(() => storedLocation);
+  const [locationStatus, setLocationStatus] = useState(() => (storedLocation ? 'granted' : 'idle'));
   const [locationError, setLocationError] = useState('');
+  const [roadDistances, setRoadDistances] = useState({});
+
+  const handleRequestLocation = useCallback(() => {
+    if (!('geolocation' in navigator)) {
+      setLocationStatus('unsupported');
+      setLocationError('');
+      return;
+    }
+
+    setLocationStatus('loading');
+    setLocationError('');
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const nextLocation = saveStoredLocation({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          savedAt: new Date().toISOString(),
+        });
+        setUserLocation(nextLocation);
+        setLocationStatus('granted');
+      },
+      (geoError) => {
+        const denied = geoError.code === geoError.PERMISSION_DENIED;
+        setLocationStatus(denied ? 'denied' : 'error');
+        if (denied) {
+          setUserLocation(null);
+          setRoadDistances({});
+          clearStoredLocation();
+        }
+        setLocationError(
+          denied
+            ? 'Location permission was denied. You can still browse attractions, but distance will be hidden.'
+            : geoError.message,
+        );
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 60000,
+      },
+    );
+  }, []);
+
+  useEffect(() => {
+    const handleStorage = (event) => {
+      if (event.key !== 'sltg_last_location') {
+        return;
+      }
+
+      try {
+        const nextLocation = event.newValue ? JSON.parse(event.newValue) : null;
+        setUserLocation(nextLocation);
+        setLocationStatus(nextLocation ? 'granted' : 'idle');
+        setLocationError('');
+      } catch {
+        setUserLocation(null);
+        setLocationStatus('idle');
+      }
+    };
+
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
+
+  useEffect(() => {
+    if (!('permissions' in navigator) || !navigator.permissions?.query) {
+      return undefined;
+    }
+
+    let active = true;
+
+    navigator.permissions
+      .query({ name: 'geolocation' })
+      .then((permissionStatus) => {
+        if (!active) {
+          return;
+        }
+
+        if (permissionStatus.state === 'granted') {
+          handleRequestLocation();
+        }
+
+        permissionStatus.onchange = () => {
+          if (!active) {
+            return;
+          }
+
+          if (permissionStatus.state === 'granted') {
+            handleRequestLocation();
+            return;
+          }
+
+          if (permissionStatus.state === 'denied') {
+            setLocationStatus('denied');
+            setUserLocation(null);
+            setRoadDistances({});
+            clearStoredLocation();
+          }
+        };
+      })
+      .catch(() => {});
+
+    return () => {
+      active = false;
+    };
+  }, [handleRequestLocation]);
 
   useEffect(() => {
     const loadImageCount = async () => {
@@ -48,6 +160,60 @@ const App = () => {
 
     loadImageCount();
   }, []);
+
+  useEffect(() => {
+    if (!userLocation || attractions.length === 0) {
+      return undefined;
+    }
+
+    const abortController = new window.AbortController();
+    const destinationEntries = attractions.map((attraction) => ({
+      id: attraction.id,
+      destination: {
+        latitude: attraction.latitude,
+        longitude: attraction.longitude,
+      },
+    }));
+
+    const pendingEntries = destinationEntries.filter(({ destination }) => {
+      const cacheKey = buildRoadDistanceKey(userLocation, destination);
+      return roadDistances[cacheKey] === undefined;
+    });
+
+    if (pendingEntries.length === 0) {
+      return () => abortController.abort();
+    }
+
+    pendingEntries.forEach(async ({ destination }) => {
+      const cacheKey = buildRoadDistanceKey(userLocation, destination);
+
+      try {
+        const distanceKm = await getRoadDistanceKm(userLocation, destination, abortController.signal);
+
+        setRoadDistances((currentDistances) => {
+          if (currentDistances[cacheKey] !== undefined) {
+            return currentDistances;
+          }
+
+          return {
+            ...currentDistances,
+            [cacheKey]: distanceKm,
+          };
+        });
+      } catch (routeError) {
+        if (routeError.name === 'AbortError') {
+          return;
+        }
+
+        setRoadDistances((currentDistances) => ({
+          ...currentDistances,
+          [cacheKey]: null,
+        }));
+      }
+    });
+
+    return () => abortController.abort();
+  }, [attractions, roadDistances, userLocation]);
 
   const handleImagesChanged = useCallback((count) => {
     setImageCount(count);
@@ -78,41 +244,6 @@ const App = () => {
     setProfile(saveProfile(nextProfile));
   };
 
-  const handleRequestLocation = () => {
-    if (!('geolocation' in navigator)) {
-      setLocationStatus('unsupported');
-      setLocationError('');
-      return;
-    }
-
-    setLocationStatus('loading');
-    setLocationError('');
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setUserLocation({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-        });
-        setLocationStatus('granted');
-      },
-      (geoError) => {
-        const denied = geoError.code === geoError.PERMISSION_DENIED;
-        setLocationStatus(denied ? 'denied' : 'error');
-        setLocationError(
-          denied
-            ? 'Location permission was denied. You can still browse attractions, but distance will be hidden.'
-            : geoError.message,
-        );
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 60000,
-      },
-    );
-  };
-
   const sharedPageProps = {
     attractions,
     loading,
@@ -127,6 +258,7 @@ const App = () => {
     userLocation,
     locationStatus,
     locationError,
+    roadDistances,
     onRequestLocation: handleRequestLocation,
   };
 
@@ -157,6 +289,7 @@ const App = () => {
                 onToggleFavorite={handleToggleFavorite}
                 onToggleVisited={handleToggleVisited}
                 userLocation={userLocation}
+                roadDistances={roadDistances}
               />
             }
           />
@@ -170,6 +303,7 @@ const App = () => {
                 onToggleFavorite={handleToggleFavorite}
                 onToggleVisited={handleToggleVisited}
                 userLocation={userLocation}
+                roadDistances={roadDistances}
               />
             }
           />

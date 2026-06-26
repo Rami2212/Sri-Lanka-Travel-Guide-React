@@ -1,7 +1,7 @@
 const statusCopy = {
   idle: 'Enable location to preview your current position directly in Google Maps.',
   loading: 'Requesting location permission from your browser...',
-  granted: 'Your current location is active on the map.',
+  granted: 'Your current location is active on the map and reused across tabs on this browser.',
   denied: 'Location permission was denied, so the current-location map cannot be shown.',
   unsupported: 'This browser does not support the Geolocation API.',
   error: 'We could not read your location. Please try again from a secure browser context.',

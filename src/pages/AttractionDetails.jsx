@@ -1,6 +1,7 @@
 import { Link, useParams } from 'react-router-dom';
 import EmptyState from '../components/EmptyState';
-import { calculateDistanceKm, formatDistance } from '../utils/distance';
+import { formatDistance } from '../utils/distance';
+import { buildRoadDistanceKey } from '../utils/roadDistance';
 
 const AttractionDetails = ({
   attractions,
@@ -12,6 +13,7 @@ const AttractionDetails = ({
   userLocation,
   locationStatus,
   locationError,
+  roadDistances,
   onRequestLocation,
 }) => {
   const { id } = useParams();
@@ -44,14 +46,14 @@ const AttractionDetails = ({
 
   const favorite = favoriteIds.includes(attraction.id);
   const visited = visitedIds.includes(attraction.id);
-  const distance = userLocation
-    ? formatDistance(
-        calculateDistanceKm(userLocation, {
-          latitude: attraction.latitude,
-          longitude: attraction.longitude,
-        }),
-      )
-    : null;
+  const destinationCoordinates = {
+    latitude: attraction.latitude,
+    longitude: attraction.longitude,
+  };
+  const distanceKey = userLocation ? buildRoadDistanceKey(userLocation, destinationCoordinates) : '';
+  const roadDistanceKm = distanceKey ? roadDistances[distanceKey] : undefined;
+  const distance =
+    roadDistanceKm === undefined ? 'Checking road distance...' : formatDistance(roadDistanceKm);
   const destination = `${attraction.latitude},${attraction.longitude}`;
   const origin = userLocation ? `${userLocation.latitude},${userLocation.longitude}` : '';
   const mapsUrl = userLocation
@@ -108,7 +110,7 @@ const AttractionDetails = ({
                 </p>
               </div>
               <div className="rounded-3xl bg-palm-50 p-4">
-                <p className="text-xs font-black uppercase tracking-wider text-palm-700">Distance</p>
+                <p className="text-xs font-black uppercase tracking-wider text-palm-700">Road distance</p>
                 <p className="mt-2 text-sm font-bold leading-6 text-slate-700">
                   {distance || 'Enable location for distance'}
                 </p>

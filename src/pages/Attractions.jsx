@@ -15,6 +15,7 @@ const Attractions = ({
   onToggleFavorite,
   onToggleVisited,
   userLocation,
+  roadDistances,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const deferredSearch = useDeferredValue(searchTerm);
@@ -98,6 +99,7 @@ const Attractions = ({
             onToggleFavorite={onToggleFavorite}
             onToggleVisited={onToggleVisited}
             userLocation={userLocation}
+            roadDistances={roadDistances}
           />
         ))}
       </div>
